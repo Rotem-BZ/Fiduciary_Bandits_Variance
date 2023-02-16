@@ -48,11 +48,24 @@ class RandomVariable:
         assert self.reward is None or self.reward == reward
         self.reward = reward
 
-    def probability_greater_than(self, value: int):
+    def P_greater_than(self, value: int):
         # returns P(X >= value)
         if self.reward is None:
             return self.lower_probability * (self.lower >= value) + (1 - self.lower_probability) * (self.upper >= value)
         return float(self.reward >= value)
+
+    def P_lesser_than(self, value: int):
+        # returns P(X <= value)
+        if self.reward is None:
+            return self.lower_probability * (self.lower <= value) + (1 - self.lower_probability) * (self.upper <= value)
+        return float(self.reward <= value)
+
+    def lesser_than_vector(self):
+        # returns a (H+1)-sized vector, where the i'th entry contains P(X <= i)
+        result = np.zeros(self.upper_bound + 1, dtype=float)
+        result[self.lower:] += self.lower_probability
+        result[self.upper:] += 1.0 - self.lower_probability
+        return result
 
     @classmethod
     def generate_game_with_approx_variance(cls, upper_bound: int, expectations: List[int], app_variance: float):

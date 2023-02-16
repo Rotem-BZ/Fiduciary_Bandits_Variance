@@ -42,8 +42,9 @@ class State:
     random_variables: List[RandomVariable] = None
     W_dict = dict()     # keys: state_vec (tuple), items: W value (float)
 
-    def __init__(self, state_vec: Tuple[int, None]):
+    def __init__(self, state_vec: Tuple[Optional[int], ...]):
         self.state_vec = state_vec  # K-sized vector, with None for unobserved actions and the reward for observed ones.
+        self.unobserved_indices = [idx for idx, value in enumerate(state_vec) if value is None]
         self.alpha = state_vec[0]
         self.beta = max(r for r in self.state_vec if r is not None)
         self.legal_actions: Optional[List[TwoActionPolicy]] = None
@@ -56,7 +57,15 @@ class State:
             self.legal_actions = [TwoActionPolicy.deterministic_policy(0, len(self.random_variables))]
         if self.beta > self.alpha:
             self.legal_actions = []
-        raise NotImplementedError()
+        legal_actions = []
+        for idx, action_idx_i in self.unobserved_indices:
+            for action_idx_r in self.unobserved_indices[idx:]:
+                mu_i = self.random_variables[action_idx_i].expectation
+                mu_r = self.random_variables[action_idx_r].expectation
+                policy = TwoActionPolicy(action_idx_i, mu_i, action_idx_r, mu_r, self.alpha, len(self.state_vec))
+                if policy.p_i * mu_i + policy.p_r * mu_r >= self.alpha:
+                    legal_actions.append(policy)
+        self.legal_actions = legal_actions
 
     def get_legal_actions(self):
         if self.legal_actions is None:
@@ -77,7 +86,15 @@ class State:
 
     def reward(self):
         assert self.is_terminal()
-        raise NotImplementedError()
+        if self.alpha == self.beta:
+            return self.alpha
+        lt_vectors = [rv.lesser_than_vector() for rv in self.random_variables]
+        multiplied_lt_vector = np.prod(np.vstack(lt_vectors), axis=0)
+        pks = multiplied_lt_vector[1:] - multiplied_lt_vector[:-1]  # pks[i] = P(max = i+1)
+        pks = pks[self.beta:]
+        ks = np.arange(self.beta + 1, self.random_variables[0].upper_bound)
+        reward = pks.dot(ks) + self.beta * (1 - np.sum(pks))
+        return reward
 
     def optimal_policy(self):
         legal_actions = self.get_legal_actions()
@@ -104,7 +121,7 @@ class State:
         return argbest_value, best_value
 
     @classmethod
-    def recursive_W_dict_step(cls, current_state: Tuple[int, None]):
+    def recursive_W_dict_step(cls, current_state: Tuple[Optional[int], ...]):
         if current_state in cls.W_dict:
             return cls.W_dict[current_state]
         obj = cls(current_state)
@@ -133,5 +150,6 @@ class State:
         # makes the first call to the recursive function
         cls.random_variables = random_variables
         cls.W_dict = dict()
+        _W_0 = cls.recursive_W_dict_step((None,) * len(random_variables))
 
 
