@@ -1,4 +1,6 @@
 # this file implements the game, with controllable parameters and experiment scripts
+import random
+
 import numpy as np
 
 from distributions import RandomVariable, Arm
@@ -19,17 +21,17 @@ def run_game(upper_bound: int, num_arms: int, app_variance: float, num_agents: i
 
     for agent_idx in range(num_agents):
         action_portfolio = mechanism.choose_action(agent_idx)
-        # assert len(action_portfolio) == num_arms
-        # assert np.all(action_portfolio >= 0.0)
-        # assert np.isclose(np.sum(action_portfolio), 1.0)
+        assert len(action_portfolio) == num_arms
+        assert np.all(action_portfolio >= 0.0)
+        assert np.isclose(np.sum(action_portfolio), 1.0)
         action_idx = np.random.choice(num_arms, p=action_portfolio)
         reward = arms[action_idx].sample()
         mechanism.update_knowledge(agent_idx, action_idx, reward)
 
-        current_belief[action_idx] = reward
-        social_welfare += reward
         if current_belief[0] > action_portfolio.dot(current_belief):
             EAIR_violations += 1
+        current_belief[action_idx] = reward
+        social_welfare += reward
         actions_taken.append(action_idx)
 
     print(f"""
@@ -41,7 +43,8 @@ def run_game(upper_bound: int, num_arms: int, app_variance: float, num_agents: i
 
 
 def main():
-    run_game(upper_bound=100, num_arms=50, app_variance=10.0, num_agents=60, mechanism_name='GREEDY')
+    random.seed(17)
+    run_game(upper_bound=10, num_arms=4, app_variance=3.0, num_agents=60, mechanism_name='FEE')
 
 
 if __name__ == '__main__':

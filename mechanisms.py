@@ -113,6 +113,8 @@ class FEE(Mechanism):
                 self.phase = 'secondary_exploration'
                 self.arms_worth_exploring = [i for i in self.unobserved_arm_indices if
                                              self.actions[i].P_greater_than(self.current_state.beta) > 0]
+                if not self.arms_worth_exploring:
+                    self.phase = 'exploitation'
             else:
                 self.phase = 'exploitation'
         elif self.phase == 'secondary_exploration':
@@ -123,7 +125,7 @@ class FEE(Mechanism):
 
 
 def get_mechanism(mechanism_name: str, **kwargs) -> Mechanism:
-    mechanism_cls = {'GREEDY': Greedy, 'FULL_EXPORATION': FullExploration, 'tbd': Mechanism}[mechanism_name]
+    mechanism_cls = {'GREEDY': Greedy, 'FULL_EXPLORATION': FullExploration, 'FEE': FEE}[mechanism_name]
     obj = mechanism_cls(**kwargs)
     return obj
 

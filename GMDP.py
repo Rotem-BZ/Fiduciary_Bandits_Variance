@@ -17,7 +17,7 @@ class TwoActionPolicy:
 
         self.portfolio = self.make_portfolio(i, mu_i, r, mu_r, alpha, num_arms)
         self.p_i = self.portfolio[i]
-        self.p_r = self.portfolio[r]
+        self.p_r = 1.0 - self.p_i
 
     @staticmethod
     def make_portfolio(i: int, mu_i: int, r: int, mu_r: int, alpha: int, num_arms: int):
@@ -102,7 +102,7 @@ class State:
         multiplied_lt_vector = np.prod(np.vstack(lt_vectors), axis=0)
         pks = multiplied_lt_vector[1:] - multiplied_lt_vector[:-1]  # pks[i] = P(max = i+1)
         pks = pks[self.beta:]
-        ks = np.arange(self.beta + 1, self.random_variables[0].upper_bound)
+        ks = np.arange(self.beta + 1, self.random_variables[0].upper_bound + 1)
         reward = pks.dot(ks) + self.beta * (1 - np.sum(pks))
         return reward
 
