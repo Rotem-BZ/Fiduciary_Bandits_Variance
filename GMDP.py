@@ -45,8 +45,11 @@ class State:
     def __init__(self, state_vec: Tuple[Optional[int], ...]):
         self.state_vec = state_vec  # K-sized vector, with None for unobserved actions and the reward for observed ones.
         self.unobserved_indices = [idx for idx, value in enumerate(state_vec) if value is None]
-        self.alpha = state_vec[0]
-        self.beta = max(r for r in self.state_vec if r is not None)
+        if self.is_initial_state():
+            self.alpha, self.beta = None, None
+        else:
+            self.alpha = state_vec[0]
+            self.beta = max(r for r in self.state_vec if r is not None)
         self.legal_actions: Optional[List[TwoActionPolicy]] = None
 
     def is_initial_state(self):
@@ -55,10 +58,12 @@ class State:
     def _find_legal_actions(self):
         if self.is_initial_state():
             self.legal_actions = [TwoActionPolicy.deterministic_policy(0, len(self.random_variables))]
+            return
         if self.beta > self.alpha:
             self.legal_actions = []
+            return
         legal_actions = []
-        for idx, action_idx_i in self.unobserved_indices:
+        for idx, action_idx_i in enumerate(self.unobserved_indices):
             for action_idx_r in self.unobserved_indices[idx:]:
                 mu_i = self.random_variables[action_idx_i].expectation
                 mu_r = self.random_variables[action_idx_r].expectation
@@ -75,13 +80,18 @@ class State:
     def is_terminal(self):
         return len(self.get_legal_actions()) == 0
 
-    def transition_function(self, action_idx: int):
+    def transition_given_reward(self, action_idx: int, reward: int):
+        assert self.state_vec[action_idx] is None or self.state_vec[action_idx] == reward
+        new_state_vec = self.state_vec[:action_idx] + (reward,) + self.state_vec[action_idx + 1:]
+        return new_state_vec
+
+    def transition_given_action(self, action_idx: int):
         assert self.state_vec[action_idx] is None   # must choose unobserved arms
         rv = self.random_variables[action_idx]
-        state1 = self.state_vec[:action_idx] + (rv.lower,) + self.state_vec[action_idx + 1:]
+        state1 = self.transition_given_reward(action_idx, rv.lower)
         if rv.lower == rv.upper:
             return [(state1, 1.0)]
-        state2 = self.state_vec[:action_idx] + (rv.upper,) + self.state_vec[action_idx + 1:]
+        state2 = self.transition_given_reward(action_idx, rv.upper)
         return [(state1, rv.lower_probability), (state2, 1.0 - rv.lower_probability)]
 
     def reward(self):
@@ -99,19 +109,19 @@ class State:
     def optimal_policy(self):
         legal_actions = self.get_legal_actions()
         if self.is_initial_state():
-            return legal_actions[0]
+            return legal_actions[0], None
         if self.is_terminal():
             raise ValueError("requested policy in terminal state")
         best_value = None
         argbest_value = None
         for policy in legal_actions:
-            next_states_after_i = self.transition_function(policy.i)
+            next_states_after_i = self.transition_given_action(policy.i)
             assert all(state in self.W_dict for state, _ in next_states_after_i)
             i_expression = policy.p_i * sum(prob * self.W_dict[state] for state, prob in next_states_after_i)
             if policy.i == policy.r:
                 r_expression = 0
             else:
-                next_states_after_r = self.transition_function(policy.r)
+                next_states_after_r = self.transition_given_action(policy.r)
                 assert all(state in self.W_dict for state, _ in next_states_after_r)
                 r_expression = policy.p_r * sum(prob * self.W_dict[state] for state, prob in next_states_after_r)
             value = i_expression + r_expression
@@ -135,7 +145,7 @@ class State:
         legal_actions = obj.get_legal_actions()
         all_next_states = set()
         for policy in legal_actions:
-            next_states = obj.transition_function(policy.i) + obj.transition_function(policy.r)
+            next_states = obj.transition_given_action(policy.i) + obj.transition_given_action(policy.r)
             next_states = map(lambda item: item[0], next_states)
             all_next_states.update(next_states)
         for next_state in all_next_states:
@@ -153,3 +163,15 @@ class State:
         _W_0 = cls.recursive_W_dict_step((None,) * len(random_variables))
 
 
+def main():
+    num_arms = 4
+    upper_bound = 7
+    app_variance = 0.5
+    assert num_arms < upper_bound, "not a necessary constraint"
+    expectations = list(range(num_arms, 0, -1))
+    random_variables = RandomVariable.generate_game_with_approx_variance(upper_bound, expectations, app_variance)
+    State.calculate_W_dict(random_variables)
+
+
+if __name__ == '__main__':
+    main()

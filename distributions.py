@@ -49,16 +49,16 @@ class RandomVariable:
         self.reward = reward
 
     def P_greater_than(self, value: int):
-        # returns P(X >= value)
+        # returns P(X > value)
         if self.reward is None:
-            return self.lower_probability * (self.lower >= value) + (1 - self.lower_probability) * (self.upper >= value)
-        return float(self.reward >= value)
+            return self.lower_probability * (self.lower > value) + (1 - self.lower_probability) * (self.upper > value)
+        return float(self.reward > value)
 
-    def P_lesser_than(self, value: int):
-        # returns P(X <= value)
-        if self.reward is None:
-            return self.lower_probability * (self.lower <= value) + (1 - self.lower_probability) * (self.upper <= value)
-        return float(self.reward <= value)
+    # def P_lesser_than(self, value: int):
+    #     # returns P(X <= value)
+    #     if self.reward is None:
+    #         return self.lower_probability * (self.lower <= value) + (1 - self.lower_probability) * (self.upper <= value)
+    #     return float(self.reward <= value)
 
     def lesser_than_vector(self):
         # returns a (H+1)-sized vector, where the i'th entry contains P(X <= i)
