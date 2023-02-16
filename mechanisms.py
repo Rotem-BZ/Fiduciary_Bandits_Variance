@@ -73,3 +73,11 @@ def get_mechanism(mechanism_name: str, **kwargs) -> Mechanism:
     mechanism_cls = {'GREEDY': Greedy, 'FULL_EXPORATION': FullExploration, 'tbd': Mechanism}[mechanism_name]
     obj = mechanism_cls(**kwargs)
     return obj
+
+
+def debug_main():
+    pass
+
+
+if __name__ == '__main__':
+    debug_main()

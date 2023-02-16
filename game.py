@@ -14,7 +14,7 @@ def run_game(upper_bound: int, num_arms: int, app_variance: float, num_agents: i
     mechanism = get_mechanism(mechanism_name, actions=random_variables, upper_bound=upper_bound, num_agents=num_agents)
     current_belief = np.array(expectations)
     social_welfare = 0  # total reward
-    EIR_violations = 0
+    EAIR_violations = 0
     actions_taken = []
 
     for agent_idx in range(num_agents):
@@ -29,14 +29,14 @@ def run_game(upper_bound: int, num_arms: int, app_variance: float, num_agents: i
         current_belief[action_idx] = reward
         social_welfare += reward
         if current_belief[0] > action_portfolio.dot(current_belief):
-            EIR_violations += 1
+            EAIR_violations += 1
         actions_taken.append(action_idx)
 
     print(f"""
     mechanism: {mechanism_name}\n
     actions taken: {actions_taken}\n
     total reward (social welfare): {social_welfare}\n
-    number of EIR violations: {EIR_violations}\n
+    number of EAIR violations: {EAIR_violations}\n
     """)
 
 

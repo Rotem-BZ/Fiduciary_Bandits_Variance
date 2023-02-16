@@ -22,7 +22,7 @@ class RandomVariable:
         self.lower = lower_value
         self.upper = upper_value
         if self.lower == self.upper:
-            self.lower_probability = 1
+            self.lower_probability = 1.0
         else:
             self.lower_probability = (self.upper - self.expectation) / (self.upper - self.lower)
 
