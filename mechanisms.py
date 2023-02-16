@@ -18,7 +18,7 @@ class Mechanism(ABC):
         self.unobserved_arm_indices: Set[int] = set(range(self.K))
 
     @abstractmethod
-    def choose_action(self, agent_idx: int) -> int:
+    def choose_action(self, agent_idx: int) -> np.ndarray:
         pass
 
     @abstractmethod
@@ -28,15 +28,20 @@ class Mechanism(ABC):
             self.observed_arm_indices.add(action_idx)
             self.unobserved_arm_indices.remove(action_idx)
 
+    def onehot_encoding(self, action_idx: int):
+        portfolio = np.zeros(self.K, dtype=float)
+        portfolio[action_idx] = 1.0
+        return portfolio
+
 
 class Greedy(Mechanism):
     def __init__(self, actions: List[RandomVariable], upper_bound: int, num_agents: int):
         super(Greedy, self).__init__(actions, upper_bound, num_agents)
         self.expectations = [rv.expectation for rv in self.actions]
 
-    def choose_action(self, agent_idx: int) -> int:
+    def choose_action(self, agent_idx: int) -> np.ndarray:
         argmax = np.argmax(self.expectations)
-        return int(argmax)
+        return self.onehot_encoding(int(argmax))
 
     def update_knowledge(self, agent_idx: int, action_idx: int, reward: int):
         super(Greedy, self).update_knowledge(agent_idx, action_idx, reward)
@@ -50,23 +55,21 @@ class FullExploration(Mechanism):
         self.argmax_reward = None
         self.exploration_idx = -1
 
-    def choose_action(self, agent_idx: int) -> int:
+    def choose_action(self, agent_idx: int) -> np.ndarray:
         if self.exploration_idx < self.K - 1:
             self.exploration_idx += 1
-            return self.exploration_idx
+            return self.onehot_encoding(self.exploration_idx)
         # exploitation phase
-        return self.argmax_reward
+        return self.onehot_encoding(self.argmax_reward)
 
     def update_knowledge(self, agent_idx: int, action_idx: int, reward: int):
         super(FullExploration, self).update_knowledge(agent_idx, action_idx, reward)
-        if reward > self.max_reward:
+        if self.max_reward is None or reward > self.max_reward:
             self.max_reward = reward
             self.argmax_reward = action_idx
 
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+def get_mechanism(mechanism_name: str, **kwargs) -> Mechanism:
+    mechanism_cls = {'GREEDY': Greedy, 'FULL_EXPORATION': FullExploration, 'tbd': Mechanism}[mechanism_name]
+    obj = mechanism_cls(**kwargs)
+    return obj

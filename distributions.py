@@ -1,5 +1,8 @@
 # this file implements the random variables, and allows controlling variance
 import random
+from typing import List
+
+import numpy as np
 
 
 def possible_variances(upper_bound: int, expectation: int):
@@ -36,6 +39,10 @@ class RandomVariable:
         return cls(upper_bound=upper_bound, expectation=expectation,
                    variance=desired_variance, lower_value=lower, upper_value=upper)
 
+    # def value_or_expectation(self):
+    #     # if the variable is realized, returns the known reward. Otherwise, returns the expectation.
+    #     return self.reward or self.expectation
+
     def update_reward(self, reward: int):
         # will be used by the mechanism after the arm has been observed.
         assert self.reward is None or self.reward == reward
@@ -46,6 +53,22 @@ class RandomVariable:
         if self.reward is None:
             return self.lower_probability * (self.lower >= value) + (1 - self.lower_probability) * (self.upper >= value)
         return float(self.reward >= value)
+
+    @classmethod
+    def generate_game_with_approx_variance(cls, upper_bound: int, expectations: List[int], app_variance: float):
+        """
+        Return a list of ranodm variables with the given expectations and upper_bounds, and variance as close to
+        the given app_variance as possible.
+        """
+        rvs = []
+        for expectation in sorted(expectations, reverse=True):
+            possible_variances_ = possible_variances(upper_bound, expectation)
+            variances = np.array(list(possible_variances_.keys()))
+            closest_variance = variances[np.argmin(np.abs(variances - app_variance))]
+            lower, upper = possible_variances_[closest_variance]
+            rvs.append(cls(upper_bound=upper_bound, expectation=expectation,
+                           variance=closest_variance, lower_value=lower, upper_value=upper))
+        return rvs
 
 
 class Arm(RandomVariable):
