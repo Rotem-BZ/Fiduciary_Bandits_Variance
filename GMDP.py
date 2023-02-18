@@ -9,11 +9,7 @@ from distributions import RandomVariable
 class TwoActionPolicy:
     def __init__(self, i: int, mu_i: int, r: int, mu_r: int, alpha: int, num_arms: int):
         self.i = i
-        # self.mu_i = mu_i
         self.r = r
-        # self.mu_r = mu_r
-        # self.alpha = alpha
-        # self.num_arms = num_arms
 
         self.portfolio = self.make_portfolio(i, mu_i, r, mu_r, alpha, num_arms)
         self.p_i = self.portfolio[i]
@@ -161,17 +157,3 @@ class State:
         cls.random_variables = random_variables
         cls.W_dict = dict()
         _W_0 = cls.recursive_W_dict_step((None,) * len(random_variables))
-
-
-def main():
-    num_arms = 4
-    upper_bound = 7
-    app_variance = 0.5
-    assert num_arms < upper_bound, "not a necessary constraint"
-    expectations = list(range(num_arms, 0, -1))
-    random_variables = RandomVariable.generate_game_with_approx_variance(upper_bound, expectations, app_variance)
-    State.calculate_W_dict(random_variables)
-
-
-if __name__ == '__main__':
-    main()
