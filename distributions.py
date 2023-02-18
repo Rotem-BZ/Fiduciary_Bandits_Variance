@@ -68,13 +68,13 @@ class RandomVariable:
         return result
 
     @classmethod
-    def generate_game_with_approx_variance(cls, upper_bound: int, expectations: List[int], app_variance: float):
+    def generate_game_with_approx_variance(cls, upper_bound: int, expectations: List[int], app_variances: List[float]):
         """
         Return a list of ranodm variables with the given expectations and upper_bounds, and variance as close to
-        the given app_variance as possible.
+        the matching given app_variance as possible.
         """
         rvs = []
-        for expectation in sorted(expectations, reverse=True):
+        for expectation, app_variance in zip(expectations, app_variances):
             possible_variances_ = possible_variances(upper_bound, expectation)
             variances = np.array(list(possible_variances_.keys()))
             closest_variance = variances[np.argmin(np.abs(variances - app_variance))]

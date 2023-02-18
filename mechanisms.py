@@ -8,6 +8,9 @@ from distributions import RandomVariable
 from GMDP import TwoActionPolicy, State
 
 
+MECHANISM_NAMES = ['GREEDY', 'FULL_EXPLORATION', 'FEE']
+
+
 class Mechanism(ABC):
     @abstractmethod
     def __init__(self, actions: List[RandomVariable], upper_bound: int, num_agents: int):
@@ -125,14 +128,7 @@ class FEE(Mechanism):
 
 
 def get_mechanism(mechanism_name: str, **kwargs) -> Mechanism:
+    assert mechanism_name in MECHANISM_NAMES, f"choose a mechanism out of {MECHANISM_NAMES}"
     mechanism_cls = {'GREEDY': Greedy, 'FULL_EXPLORATION': FullExploration, 'FEE': FEE}[mechanism_name]
     obj = mechanism_cls(**kwargs)
     return obj
-
-
-def debug_main():
-    pass
-
-
-if __name__ == '__main__':
-    debug_main()
